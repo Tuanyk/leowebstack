@@ -1,0 +1,11 @@
+FROM nginx:1.26.0
+
+RUN apt update && \
+    apt install -y \
+    zlib1g zlib1g-dev \
+    libssl-dev \
+    certbot cron python3-certbot-nginx unzip
+
+WORKDIR /etc/nginx
+CMD ["nginx", "-c", "/etc/nginx/conf/nginx.conf", "-g", "daemon off;"]
+# Start NGINX

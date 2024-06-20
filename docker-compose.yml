@@ -1,0 +1,65 @@
+version: "3.8"
+networks:
+  lempstack:
+    driver: bridge
+services:
+  nginx: 
+    build:
+      context: .
+      dockerfile: ./dockerfile/nginx
+    container_name: nginx
+    volumes:
+      - ./data/web:/var/web
+      - ./data/letsencrypt:/etc/letsencrypt
+      - ./data/nginx/conf.d:/etc/nginx/conf.d
+      - ./data/nginx/nginx.conf:/etc/nginx/conf/nginx.conf
+    ports:
+      - 80:80
+      - 443:443
+    depends_on:
+      - php83
+      - mysql
+    restart: always
+    networks:
+      - lempstack
+  php83:
+    build:
+      context: .
+      dockerfile: ./dockerfile/php83
+    container_name: php83
+    volumes:
+      - ./data/web:/var/web
+      - ./php-fpm.d:/usr/local/etc/php-fpm.d/
+      - ./phpconf/php.ini:/usr/local/etc/php/php.ini
+    restart: always
+    networks:
+      - lempstack
+  mysql:
+    image: mysql:latest
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./data/mysql:/etc/mysql/conf.d
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: PASSWORD_HERE
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: ADMIN_PASSWORD_HERE
+      MYSQL_LOG_BIN: /var/log/mysql/mysql-bin.log
+      MYSQL_LOG_BIN_EXPIRE: 7  # Number of days before logs are automatically expired
+      MYSQL_SLOW_QUERY_LOG: 1
+      MYSQL_LONG_QUERY_TIME: 1  # Threshold for slow queries in seconds (adjust as needed)
+      MYSQL_KEY_BUFFER_SIZE: 256M  # Size of the buffer used for index blocks
+      MYSQL_MAX_CONNECTIONS: 1000  # Maximum number of concurrent connections
+      MYSQL_INNODB_BUFFER_POOL_SIZE: 4G  # Size of the InnoDB buffer pool
+      MYSQL_INNODB_LOG_FILE_SIZE: 512M  # Size of each InnoDB log file
+      MYSQL_INNODB_FLUSH_LOG_AT_TRX_COMMIT: 2  # Flush InnoDB log to disk every transaction commit
+      MYSQL_INNODB_FLUSH_METHOD: O_DIRECT  # Direct I/O for flushing InnoDB buffer pool
+      MYSQL_INNODB_DOUBLEWRITE: 0  # Disable doublewrite buffer for better performance
+      MYSQL_INNODB_FILE_PER_TABLE: 1  # Use separate files for each InnoDB table
+    ports:
+      - 3306:3306
+    networks:
+      - lempstack
+volumes:
+  mysql-data:
